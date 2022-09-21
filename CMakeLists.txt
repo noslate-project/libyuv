@@ -153,6 +153,7 @@ else()
     list(APPEND uv_libraries pthread)
   endif()
   list(APPEND uv_sources
+       src/unix/aio.c
        src/unix/async.c
        src/unix/core.c
        src/unix/dl.c
@@ -388,13 +389,15 @@ if(LIBUV_BUILD_TESTS)
        test/test-error.c
        test/test-fail-always.c
        test/test-fork.c
-       test/test-fs-copyfile.c
+      # TODO(chengzhong.wcz): support various fs ops in aio;
+      #  test/test-fs-copyfile.c
        test/test-fs-event.c
-       test/test-fs-poll.c
-       test/test-fs.c
-       test/test-fs-readdir.c
-       test/test-fs-fd-hash.c
-       test/test-fs-open-flags.c
+      #  test/test-fs-poll.c
+      #  test/test-fs.c
+      #  test/test-fs-readdir.c
+      #  test/test-fs-fd-hash.c
+      #  test/test-fs-open-flags.c
+       test/test-fs-aio.c
        test/test-get-currentexe.c
        test/test-get-loadavg.c
        test/test-get-memory.c
@@ -492,8 +495,9 @@ if(LIBUV_BUILD_TESTS)
        test/test-test-macros.c
        test/test-thread-equal.c
        test/test-thread.c
-       test/test-threadpool-cancel.c
-       test/test-threadpool.c
+      # MARK: threadpool is been disabled.
+      #  test/test-threadpool-cancel.c
+      #  test/test-threadpool.c
        test/test-timer-again.c
        test/test-timer-from-check.c
        test/test-timer.c

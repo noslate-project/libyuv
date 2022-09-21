@@ -202,6 +202,13 @@ void uv__work_submit(uv_loop_t* loop,
 
 void uv__work_done(uv_async_t* handle);
 
+// Linux AIO
+void uv__aio_submit(uv_loop_t* loop,
+                    uv_fs_t* req,
+                    void (*done)(struct uv__work* w, int status));
+
+void uv__aio_work_done(uv__aio_t* handle);
+
 size_t uv__count_bufs(const uv_buf_t bufs[], unsigned int nbufs);
 
 int uv__socket_sockopt(uv_handle_t* handle, int optname, int* value);

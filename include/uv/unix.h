@@ -84,12 +84,18 @@
 #endif
 
 struct uv__io_s;
+struct uv__aio_s;
 struct uv_loop_s;
 
 typedef void (*uv__io_cb)(struct uv_loop_s* loop,
                           struct uv__io_s* w,
                           unsigned int events);
+typedef void (*uv__aio_cb)(struct uv__aio_s* w);
+
 typedef struct uv__io_s uv__io_t;
+
+typedef struct uv__aio_s uv__aio_t;
+typedef unsigned long uv__aio_context_t;
 
 struct uv__io_s {
   uv__io_cb cb;
@@ -99,6 +105,16 @@ struct uv__io_s {
   unsigned int events;  /* Current event mask. */
   int fd;
   UV_IO_PRIVATE_PLATFORM_FIELDS
+};
+
+struct uv__aio_s {
+  /* read-only */
+  struct uv_loop_s* loop;
+  int aio_wfd;
+  uv__aio_context_t aio_ctx;
+  uv__io_t aio_io_watcher;
+  uv__aio_cb aio_cb;
+  void* iocb_pending_queue[2];
 };
 
 #ifndef UV_PLATFORM_SEM_T
@@ -111,6 +127,10 @@ struct uv__io_s {
 
 #ifndef UV_PLATFORM_FS_EVENT_FIELDS
 # define UV_PLATFORM_FS_EVENT_FIELDS /* empty */
+#endif
+
+#ifndef UV_PLATFORM_FS_FIELDS
+#define UV_PLATFORM_FS_FIELDS /* empty */
 #endif
 
 #ifndef UV_STREAM_PRIVATE_PLATFORM_FIELDS
@@ -249,7 +269,8 @@ typedef struct {
   uv__io_t signal_io_watcher;                                                 \
   uv_signal_t child_watcher;                                                  \
   int emfile_fd;                                                              \
-  UV_PLATFORM_LOOP_FIELDS                                                     \
+  uv__aio_t wq_aio;                                                           \
+  UV_PLATFORM_LOOP_FIELDS
 
 #define UV_REQ_TYPE_PRIVATE /* empty */
 
@@ -370,6 +391,7 @@ typedef struct {
   double mtime;                                                               \
   struct uv__work work_req;                                                   \
   uv_buf_t bufsml[4];                                                         \
+  UV_PLATFORM_FS_FIELDS
 
 #define UV_WORK_PRIVATE_FIELDS                                                \
   struct uv__work work_req;

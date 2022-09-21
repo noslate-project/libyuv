@@ -258,6 +258,9 @@ void uv__work_submit(uv_loop_t* loop,
                      enum uv__work_kind kind,
                      void (*work)(struct uv__work* w),
                      void (*done)(struct uv__work* w, int status)) {
+#if defined(__linux__)
+  assert("uv__work_submit is disabled on linux, use aio instead" && 0);
+#endif
   uv_once(&once, init_once);
   w->loop = loop;
   w->work = work;

@@ -1571,7 +1571,7 @@ int uv__search_path(const char* prog, char* buf, size_t* buflen) {
     buf[*buflen] = '\0';
 
     return 0;
-  } 
+  }
 
   /* Case iii). Search PATH environment variable */
   cloned_path = NULL;

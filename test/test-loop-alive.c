@@ -19,8 +19,9 @@
  * IN THE SOFTWARE.
  */
 
-#include "uv.h"
+#include <unistd.h>
 #include "task.h"
+#include "uv.h"
 
 static uv_timer_t timer_handle;
 
@@ -28,18 +29,21 @@ static void timer_cb(uv_timer_t* handle) {
   ASSERT(handle);
 }
 
+static uv_file fd;
+static uv_fs_t fs_req;
+static uv_fs_t close_req;
+static char test_buf[] = "test-buffer\n";
+static uv_buf_t iov;
 
-static uv_work_t work_req;
+static void write_cb(uv_fs_t* req) {
+  int r;
+  ASSERT(req->result >= 0); /* FIXME(bnoordhuis) Check if requested size? */
+  uv_fs_req_cleanup(req);
 
-static void work_cb(uv_work_t* req) {
-  ASSERT(req);
+  r = uv_fs_close(uv_default_loop(), &close_req, fd, NULL);
+  ASSERT(r == 0);
+  uv_fs_req_cleanup(&close_req);
 }
-
-static void after_work_cb(uv_work_t* req, int status) {
-  ASSERT(req);
-  ASSERT(status == 0);
-}
-
 
 TEST_IMPL(loop_alive) {
   int r;
@@ -55,13 +59,26 @@ TEST_IMPL(loop_alive) {
   ASSERT(!uv_loop_alive(uv_default_loop()));
 
   /* loops with requests are alive */
-  r = uv_queue_work(uv_default_loop(), &work_req, work_cb, after_work_cb);
+  r = uv_fs_open(uv_default_loop(),
+                 &fs_req,
+                 "test_file",
+                 O_WRONLY | O_CREAT,
+                 S_IRUSR | S_IWUSR,
+                 NULL);
+  ASSERT(r >= 0);
+  uv_fs_req_cleanup(&fs_req);
+  iov = uv_buf_init(test_buf, sizeof(test_buf));
+  r = uv_fs_write(uv_default_loop(), &fs_req, r, &iov, 1, -1, write_cb);
   ASSERT(r == 0);
+
   ASSERT(uv_loop_alive(uv_default_loop()));
 
   r = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
   ASSERT(r == 0);
   ASSERT(!uv_loop_alive(uv_default_loop()));
+
+  /* Cleanup. */
+  unlink("test_file");
 
   return 0;
 }

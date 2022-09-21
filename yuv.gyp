@@ -154,6 +154,7 @@
             'include/uv/darwin.h',
             'include/uv/bsd.h',
             'include/uv/aix.h',
+            'src/unix/aio.c',
             'src/unix/async.c',
             'src/unix/atomic-ops.h',
             'src/unix/core.c',

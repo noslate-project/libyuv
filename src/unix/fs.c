@@ -89,6 +89,18 @@
 extern char *mkdtemp(char *template); /* See issue #740 on AIX < 7 */
 #endif
 
+#if defined(__linux__)
+#define UV_PLATFORM_FS_INIT()                                                 \
+  do {                                                                        \
+    req->iocbs = NULL;                                                        \
+    req->iocbs_count = 0;                                                     \
+    req->submitted_iocbs_count = 0;                                           \
+    req->done_iocbs_count = 0;                                                \
+  } while (0)
+#else
+#define UV_PLATFORM_FS_INIT() /** empty */
+#endif
+
 #define INIT(subtype)                                                         \
   do {                                                                        \
     if (req == NULL)                                                          \
@@ -102,6 +114,7 @@ extern char *mkdtemp(char *template); /* See issue #740 on AIX < 7 */
     req->new_path = NULL;                                                     \
     req->bufs = NULL;                                                         \
     req->cb = cb;                                                             \
+    UV_PLATFORM_FS_INIT();                                                    \
   }                                                                           \
   while (0)
 
@@ -156,6 +169,17 @@ extern char *mkdtemp(char *template); /* See issue #740 on AIX < 7 */
   }                                                                           \
   while (0)
 
+#define AIO_POST                                                              \
+  do {                                                                        \
+    if (cb != NULL) {                                                         \
+      uv__req_register(loop, req);                                            \
+      uv__aio_submit(loop, req, uv__fs_done);                                 \
+      return 0;                                                               \
+    } else {                                                                  \
+      uv__fs_work(&req->work_req);                                            \
+      return req->result;                                                     \
+    }                                                                         \
+  } while (0)
 
 static int uv__fs_close(int fd) {
   int rc;
@@ -1880,7 +1904,11 @@ int uv_fs_read(uv_loop_t* loop, uv_fs_t* req,
   memcpy(req->bufs, bufs, nbufs * sizeof(*bufs));
 
   req->off = off;
+#if defined(__linux__)
+  AIO_POST;
+#else
   POST;
+#endif
 }
 
 
@@ -2050,7 +2078,11 @@ int uv_fs_write(uv_loop_t* loop,
   memcpy(req->bufs, bufs, nbufs * sizeof(*bufs));
 
   req->off = off;
+#if defined(__linux__)
+  AIO_POST;
+#else
   POST;
+#endif
 }
 
 
@@ -2084,6 +2116,14 @@ void uv_fs_req_cleanup(uv_fs_t* req) {
   if (req->fs_type != UV_FS_OPENDIR && req->ptr != &req->statbuf)
     uv__free(req->ptr);
   req->ptr = NULL;
+
+#if defined(__linux)
+  uv__free(req->iocbs);
+  req->iocbs = NULL;
+  req->iocbs_count = 0;
+  req->submitted_iocbs_count = 0;
+  req->done_iocbs_count = 0;
+#endif
 }
 
 

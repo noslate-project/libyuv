@@ -1553,15 +1553,16 @@ struct uv_fs_poll_s {
   void* poll_ctx;
 };
 
-UV_EXTERN int uv_fs_poll_init(uv_loop_t* loop, uv_fs_poll_t* handle);
-UV_EXTERN int uv_fs_poll_start(uv_fs_poll_t* handle,
-                               uv_fs_poll_cb poll_cb,
-                               const char* path,
-                               unsigned int interval);
-UV_EXTERN int uv_fs_poll_stop(uv_fs_poll_t* handle);
-UV_EXTERN int uv_fs_poll_getpath(uv_fs_poll_t* handle,
-                                 char* buffer,
-                                 size_t* size);
+// TODO(chengzhong.wcz): there is no sync or aio support for fs polling.
+// UV_EXTERN int uv_fs_poll_init(uv_loop_t* loop, uv_fs_poll_t* handle);
+// UV_EXTERN int uv_fs_poll_start(uv_fs_poll_t* handle,
+//                                uv_fs_poll_cb poll_cb,
+//                                const char* path,
+//                                unsigned int interval);
+// UV_EXTERN int uv_fs_poll_stop(uv_fs_poll_t* handle);
+// UV_EXTERN int uv_fs_poll_getpath(uv_fs_poll_t* handle,
+//                                  char* buffer,
+//                                  size_t* size);
 
 
 struct uv_signal_s {

@@ -22,6 +22,8 @@
 #ifndef UV_LINUX_H
 #define UV_LINUX_H
 
+#include <linux/aio_abi.h>  // struct iocb
+
 #define UV_PLATFORM_LOOP_FIELDS                                               \
   uv__io_t inotify_read_watcher;                                              \
   void* inotify_watchers;                                                     \
@@ -30,5 +32,12 @@
 #define UV_PLATFORM_FS_EVENT_FIELDS                                           \
   void* watchers[2];                                                          \
   int wd;                                                                     \
+
+#define UV_PLATFORM_FS_FIELDS                                                 \
+  struct iocb* iocbs;                                                         \
+  unsigned int iocbs_count;                                                   \
+  unsigned int submitted_iocbs_count;                                         \
+  unsigned int done_iocbs_count;                                              \
+  void* iocb_pending_queue[2];
 
 #endif /* UV_LINUX_H */

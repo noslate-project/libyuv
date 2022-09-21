@@ -206,6 +206,14 @@ void uv__io_poll(uv_loop_t* loop, int timeout); /* in milliseconds or -1 */
 int uv__io_fork(uv_loop_t* loop);
 int uv__fd_exists(uv_loop_t* loop, int fd);
 
+/* aio */
+int uv__aio_init(uv_loop_t* loop, uv__aio_t* w, uv__aio_cb aio_cb);
+void uv__aio_close(uv__aio_t* w);
+void uv__aio_submit(uv_loop_t* loop,
+                    uv_fs_t* req,
+                    void (*done)(struct uv__work* w, int status));
+void uv__aio_work_done(uv__aio_t* handle);
+
 /* async */
 void uv__async_stop(uv_loop_t* loop);
 int uv__async_fork(uv_loop_t* loop);

@@ -102,7 +102,15 @@ int uv_loop_init(uv_loop_t* loop) {
   uv__handle_unref(&loop->wq_async);
   loop->wq_async.flags |= UV_HANDLE_INTERNAL;
 
+#if defined(__linux__)
+  err = uv__aio_init(loop, &loop->wq_aio, uv__aio_work_done);
+  if (err) goto fail_aio_init;
+#endif
+
   return 0;
+
+fail_aio_init:
+  assert(0);
 
 fail_async_init:
   uv_mutex_destroy(&loop->wq_mutex);
@@ -164,6 +172,10 @@ int uv_loop_fork(uv_loop_t* loop) {
 
 void uv__loop_close(uv_loop_t* loop) {
   uv__loop_internal_fields_t* lfields;
+
+#if defined(__linux__)
+  uv__aio_close(&loop->wq_aio);
+#endif
 
   uv__signal_loop_cleanup(loop);
   uv__platform_loop_delete(loop);

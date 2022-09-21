@@ -56,20 +56,40 @@ TEST_IMPL(loop_close) {
   return 0;
 }
 
-static void loop_instant_close_work_cb(uv_work_t* req) {
-}
+static uv_file fd;
+static uv_fs_t fs_req;
+static uv_fs_t close_req;
+static char test_buf[] = "test-buffer\n";
+static uv_buf_t iov;
 
-static void loop_instant_close_after_work_cb(uv_work_t* req, int status) {
+static void write_cb(uv_fs_t* req) {
+  int r;
+  ASSERT(req->result >= 0); /* FIXME(bnoordhuis) Check if requested size? */
+  uv_fs_req_cleanup(req);
+
+  r = uv_fs_close(uv_default_loop(), &close_req, fd, NULL);
+  ASSERT(r == 0);
+  uv_fs_req_cleanup(&close_req);
 }
 
 TEST_IMPL(loop_instant_close) {
+  int r;
   static uv_loop_t loop;
   static uv_work_t req;
   ASSERT(0 == uv_loop_init(&loop));
-  ASSERT(0 == uv_queue_work(&loop,
-                            &req,
-                            loop_instant_close_work_cb,
-                            loop_instant_close_after_work_cb));
+
+  r = uv_fs_open(uv_default_loop(),
+                 &fs_req,
+                 "test_file",
+                 O_WRONLY | O_CREAT,
+                 S_IRUSR | S_IWUSR,
+                 NULL);
+  ASSERT(r >= 0);
+  uv_fs_req_cleanup(&fs_req);
+  iov = uv_buf_init(test_buf, sizeof(test_buf));
+  r = uv_fs_write(uv_default_loop(), &fs_req, r, &iov, 1, -1, write_cb);
+  ASSERT(r == 0);
+
   MAKE_VALGRIND_HAPPY();
   return 0;
 }
