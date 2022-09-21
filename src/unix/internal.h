@@ -213,6 +213,7 @@ void uv__aio_submit(uv_loop_t* loop,
                     uv_fs_t* req,
                     void (*done)(struct uv__work* w, int status));
 void uv__aio_work_done(uv__aio_t* handle);
+int uv__aio_fork(uv_loop_t* loop);
 
 /* async */
 void uv__async_stop(uv_loop_t* loop);

@@ -218,6 +218,10 @@ static int uv__aio_start(uv__aio_t* w) {
   int pipefd[2];
   int err;
 
+  w->aio_io_watcher.fd = -1;
+  w->aio_wfd = -1;
+  w->aio_ctx = 0;
+
   err = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
   if (err < 0) {
     perror("eventfd");
@@ -230,7 +234,7 @@ static int uv__aio_start(uv__aio_t* w) {
   err = uv__io_setup(UV_AIO_NR_EVENTS, &w->aio_ctx);
   if (err < 0) {
     perror("io_setup");
-    return err;
+    return UV__ERR(errno);
   }
 
   uv__io_init(&w->aio_io_watcher, uv__aio_io, pipefd[0]);
@@ -246,7 +250,14 @@ void uv__aio_stop(uv_loop_t* loop, uv__aio_t* w) {
 
 void uv__aio_close(uv__aio_t* w) {
   uv__aio_stop(w->loop, w);
+  uv__io_destroy(w->aio_ctx);
   uv__io_close(w->loop, &w->aio_io_watcher);
+}
+
+int uv__aio_fork(uv_loop_t* loop) {
+  uv__aio_stop(loop, &loop->wq_aio);
+
+  return uv__aio_start(&loop->wq_aio);
 }
 
 #else

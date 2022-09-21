@@ -602,6 +602,113 @@ TEST_IMPL(fork_fs_events_file_parent_child) {
 #endif
 }
 
+static int read_cb_count = 0;
+static int write_cb_count = 0;
+static uv_fs_t open_req;
+static uv_fs_t write_req;
+static uv_fs_t read_req;
+static uv_fs_t close_req;
+static char buf[32];
+static char test_buf[] = "test-buffer\n";
+static uv_buf_t iov;
+
+static void write_cb(uv_fs_t* req) {
+  int r;
+  ASSERT(req == &write_req);
+  ASSERT(req->fs_type == UV_FS_WRITE);
+  ASSERT(req->result >= 0);
+  write_cb_count++;
+  uv_fs_req_cleanup(req);
+
+  uv_fs_t fdatasync_req;
+  r = uv_fs_fdatasync(req->loop, &fdatasync_req, open_req.result, NULL);
+  ASSERT(r == 0);
+  uv_fs_req_cleanup(&fdatasync_req);
+
+  r = uv_fs_close(req->loop, &close_req, open_req.result, NULL);
+  ASSERT(r == 0);
+  uv_fs_req_cleanup(&close_req);
+}
+
+static void read_cb(uv_fs_t* req) {
+  int r;
+  ASSERT(req == &read_req);
+  ASSERT(req->fs_type == UV_FS_READ);
+  ASSERT(req->result >= 0);
+  read_cb_count++;
+  uv_fs_req_cleanup(req);
+
+  ASSERT(strcmp(buf, test_buf) == 0);
+  r = uv_fs_close(req->loop, &close_req, open_req.result, NULL);
+  ASSERT(r == 0);
+  uv_fs_req_cleanup(&close_req);
+}
+
+TEST_IMPL(fork_fs_file_async) {
+  int r;
+  pid_t child_pid;
+
+  /* Setup. */
+  unlink("test_file");
+  uv_loop_t* loop;
+
+  loop = uv_default_loop();
+
+  // TODO(chengzhong.wcz): async open
+  r = uv_fs_open(loop,
+                 &open_req,
+                 "test_file",
+                 O_WRONLY | O_CREAT,
+                 S_IRUSR | S_IWUSR,
+                 NULL);
+  ASSERT(r >= 0);
+  iov = uv_buf_init(test_buf, sizeof(test_buf));
+  r = uv_fs_write(loop, &write_req, r, &iov, 1, -1, write_cb);
+  ASSERT(r == 0);
+  uv_run(loop, UV_RUN_DEFAULT);
+
+  ASSERT(write_cb_count == 1);
+  // open_req1.result is been used in write_cb;
+  uv_fs_req_cleanup(&open_req);
+
+  child_pid = fork();
+  ASSERT(child_pid != -1);
+
+  if (child_pid != 0) {
+    /* parent */
+    assert_wait_child(child_pid);
+
+    /* Cleanup. */
+    unlink("test_file\n");
+  } else {
+    /* child */
+    ASSERT(0 == uv_loop_fork(uv_default_loop()));
+
+    // TODO(chengzhong.wcz): async open
+    r = uv_fs_open(loop,
+                  &open_req,
+                  "test_file",
+                  O_RDWR,
+                  0,
+                  NULL);
+    ASSERT(r >= 0);
+    uv_fs_req_cleanup(&open_req);
+    memset(buf, 0, sizeof(buf));
+    iov = uv_buf_init(buf, sizeof(buf));
+    r = uv_fs_read(loop, &read_req, open_req.result, &iov, 1, -1,
+        read_cb);
+    ASSERT(r == 0);
+
+    uv_run(loop, UV_RUN_DEFAULT);
+    ASSERT(read_cb_count == 1);
+    ASSERT(write_cb_count == 1);
+    // open_req.result is been used in read_cb;
+    uv_fs_req_cleanup(&open_req);
+  }
+
+  MAKE_VALGRIND_HAPPY();
+  return 0;
+}
 
 static int work_cb_count;
 static int after_work_cb_count;

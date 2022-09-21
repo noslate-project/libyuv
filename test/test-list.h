@@ -519,6 +519,7 @@ TEST_DECLARE  (fork_signal_to_child_closed)
 TEST_DECLARE  (fork_fs_events_child)
 TEST_DECLARE  (fork_fs_events_child_dir)
 TEST_DECLARE  (fork_fs_events_file_parent_child)
+TEST_DECLARE  (fork_fs_file_async)
 #endif
 #ifndef __MVS__
 // TODO(chengzhong.wcz): work out a solution on threadpool.
@@ -1115,6 +1116,7 @@ TASK_LIST_START
   TEST_ENTRY  (fork_fs_events_child)
   TEST_ENTRY  (fork_fs_events_child_dir)
   TEST_ENTRY  (fork_fs_events_file_parent_child)
+  TEST_ENTRY  (fork_fs_file_async)
 #endif
 #ifndef __MVS__
   // TODO(chengzhong.wcz): work out a solution on threadpool.
